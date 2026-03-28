@@ -1,0 +1,27 @@
+models:
+  - type: "qwen"
+    name: "Qwen/Qwen2.5-7B-Instruct"
+    params:
+      torch_dtype: "float16"       # float16 on CUDA, falls back to float32 on CPU
+      device_map: "auto"           # let HuggingFace decide optimal device placement
+      trust_remote_code: true
+    sampling_params:
+      max_new_tokens: 256          # JSON output never needs more than this
+      do_sample: false             # greedy decoding — deterministic JSON
+      temperature: null            # must be null when do_sample is false
+      top_p: null                  # must be null when do_sample is false
+
+model_name: "qwen"
+
+paths:
+  input_folder: ""
+  prompt_path: "src/visual_grounding/prompts/entity_extraction_prompt.yaml"
+  output_folder: "outputs/stage1"
+
+CUDA_DEVICES: "0,1,2,3"
+batch_size: 30
+
+# do_sample: falseWe want deterministic JSON, not creative text
+# temperature: nullMeaningless without sampling, causes errors if set
+# top_p: nullSame reason as temperature
+# trust_remote_code: trueQwen has custom architecture code that must be allowed to run 
