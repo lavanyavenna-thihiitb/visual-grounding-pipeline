@@ -82,11 +82,12 @@ class Qwen_EntityExtraction:
         logger.debug("Sampling params: %s", sp_kwargs)
 
         try:
-            generated_ids = self.model.generate(
-                **model_inputs,
-                **sp_kwargs,
-                pad_token_id=self.tokenizer.eos_token_id,
-            )
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    **model_inputs,
+                    **sp_kwargs,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                )
 
         except Exception as e:
             logger.error("Generation failed: %s", e)
@@ -103,7 +104,7 @@ class Qwen_EntityExtraction:
             generated_ids, skip_special_tokens=True
         )[0]
 
-        logger.debug("Raw ouput: %r", raw_output)
+        logger.debug("Raw output: %r", raw_output)
         return raw_output
     
 
@@ -120,7 +121,8 @@ if __name__ == "__main__":
     )
 
     config_path = "src/visual_grounding/config/entity_extraction_config.yaml"
-    caption = "a fluffy dog and a dangerous dog are fighting in the yard"
+    # caption = "a fluffy dog and a dangerous dog are fighting in the yard"
+    caption = "the dog chases the cat and the dog runs"
 
     # ── Step 1: Load model ───────────────────────────────────────────────────
     logger.info("Initialising Qwen_EntityExtraction …")

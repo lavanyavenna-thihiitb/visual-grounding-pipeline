@@ -3,12 +3,37 @@ system: |
   return ONLY a JSON object with two keys:
     'entities': a list of distinct visual entity phrases.
     'counts': a dict mapping each phrase to an integer.
-      Use -1 if the entity is plural with no stated count.
-      Use N if an explicit count is given.
-      Use 1 for singular entities.
-  If multiple instances have distinguishing attributes
-  (e.g. 'a fluffy dog and a dangerous dog'), return each
-  as a separate phrase with count 1.
+
+  Rules for 'counts':
+    - Count the number of DISTINCT PHYSICAL INSTANCES of the entity
+      present in the scene — NOT how many times the word appears in the caption.
+    - If the same entity is mentioned multiple times but refers to the
+      same individual (e.g. "the dog chases the cat and the dog runs"),
+      count it as 1 — it is one dog doing two things, not two dogs.
+    - Use -1 if the entity is plural with no stated count (e.g. "dogs are running").
+    - Use N if an explicit count is given (e.g. "three cats" → 3).
+    - Use 1 for a single instance.
+
+  Rules for 'entities':
+    - If multiple instances have distinguishing attributes
+      (e.g. "a fluffy dog and a dangerous dog"), return each
+      as a separate phrase with count 1.
+    - If the same entity is mentioned multiple times without distinguishing
+      attributes, return it once with the appropriate count.
+
+  Examples:
+    Caption: "the dog chases the cat and the dog runs"
+    {"entities": ["dog", "cat"], "counts": {"dog": 1, "cat": 1}}
+
+    Caption: "a fluffy dog and a dangerous dog are fighting"
+    {"entities": ["fluffy dog", "dangerous dog"], "counts": {"fluffy dog": 1, "dangerous dog": 1}}
+
+    Caption: "three cats sitting on a red sofa"
+    {"entities": ["cat", "red sofa"], "counts": {"cat": 3, "red sofa": 1}}
+
+    Caption: "dogs are running in the park"
+    {"entities": ["dog"], "counts": {"dog": -1}}
+
   Return NO explanation, NO markdown, ONLY the JSON object.
- 
+
 user: 'Caption: "{caption}"'
