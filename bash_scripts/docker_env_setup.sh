@@ -3,8 +3,8 @@
 # RUN as: bash docker_env_setup.sh
 
 USER_NAME="lavanya.venna"  # Docker user name (must match Dockerfile user)
-IMAGE_NAME="visual-grounding-engine"
-CONTAINER_NAME="visual-grounding-engine-${USER_NAME}"
+IMAGE_NAME="visual-grounding-engine-new"
+CONTAINER_NAME="visual-grounding-engine-${USER_NAME}-1"
 
 # Python Environment Path (HOST path - full path on the server)
 # This will be split into: Directory (for Docker mount) and Name (for init_env.sh inside container)

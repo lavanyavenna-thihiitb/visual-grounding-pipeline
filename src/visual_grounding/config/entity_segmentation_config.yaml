@@ -1,0 +1,28 @@
+models:
+  - type: "sam3"
+    name: "facebook/sam3"
+    params:
+      torch_dtype: "float16"
+      device_map: "auto"
+      trust_remote_code: true
+    inference_params:
+      score_threshold: 0.50
+      use_count_hint: true
+
+model_name: "sam3"
+
+paths:
+  input_folder: "outputs/stage1"
+  prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
+  output_folder: "outputs/stage2"  # Writes masks + metadata here
+
+CUDA_DEVICES: "4,5,6,7"
+batch_size: 1
+
+# score_threshold: 0.50 - SAM 3 returns a confidence score per mask instance.
+# 0.50 is a reasonable default; lower = more recall,
+# higher = more precision.
+
+# use_count_hint: true - When Qwen returns {'children': 5}, we keep only the
+# top-5 masks by score. When count is -1, keep all above threshold.
+

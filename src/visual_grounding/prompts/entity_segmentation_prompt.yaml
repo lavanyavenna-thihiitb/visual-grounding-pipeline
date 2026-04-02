@@ -1,0 +1,25 @@
+
+# Prompt templates for SAM 3 text-prompted segmentation
+prompt_templates:
+
+  # Example output: "find all children", Used when: Qwen returns count = -1 (generic plural, no number given)
+  find_all:
+    template: "find all {entity}"
+
+  # Example output: "find exactly 5 children", Used when: Qwen returns a specific count e.g. {'children': 5}
+  find_exact:
+    template: "find exactly {count} {entity}"
+
+  # Example output: "find dog", Used when: count = 1 — no need to say "find exactly 1 dog", which reads unnaturally and may confuse SAM 3's text encoder
+  find_one:
+    template: "find {entity}"
+
+
+# each entity prompt on its own line
+# Example of a fully formatted multi-entity prompt passed to SAM 3:
+#   "find exactly 5 children
+#    find all dogs"
+multi_entity:
+  seperator: "\n"
+
+

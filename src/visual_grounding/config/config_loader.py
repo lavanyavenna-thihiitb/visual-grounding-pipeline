@@ -1,5 +1,6 @@
 import yaml
 import os
+import torch
 
 class ConfigLoader:
     def __init__(self, config_path):
@@ -72,4 +73,50 @@ class ConfigLoader:
         sp = self.get_sampling_params(model_type)
         return {k: v for k, v in sp.items() if v is not None}
 
+    def get_inference_params(self, model_type=None):
+        model = self.get_model_by_type(model_type)
+        return (
+            model.get("inference_params", {})
+            or model.get("sampling_params", {})
+            or {}
+        )
+    
+    def get_score_threshold(self, model_type=None):
+        return self.get_inference_params(model_type).get("score_threshold", 0.50)
+    
+    def get_use_count_hint(self, model_type=None):
+        return self.get_inference_params(model_type).get("use_count_hint", True)
+    
+    def get_huggingface_load_kwargs_for_segmentation(self, model_type=None):
+
+        params = dict(self.get_model_params(model_type))
+
+        dtype_map = {
+            "float16":  torch.float16,
+            "bfloat16": torch.bfloat16,
+            "float32":  torch.float32,
+        }
+
+        if "torch_dtype" in params and isinstance(params["torch_dtype"], str):
+            dtype_str = params["torch_dtype"]
+            if dtype_str not in dtype_map:
+                raise ValueError(
+                    f"Unsupported torch_dtype '{dtype_str}'"
+                )
+            params["torch_dtype"] = dtype_map[dtype_str]
+
+        return {k: v for k,v in params.items() if v is not None}
+    
+    def get_stage_input_folder(self, validate: bool=True):
+
+        folder = self.config["paths"]["input_folder"]
+        if validate:
+            abs_folder = os.path.abspath(folder)
+            if not os.path.exists(abs_folder):
+                raise FileNotFoundError(
+                    f"Stage 2 input folder not found: '{abs_folder}'"
+                )
+            
+        return folder
+    
 

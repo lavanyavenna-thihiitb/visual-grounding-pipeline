@@ -98,8 +98,6 @@ fi
 # ---- SSH Keys copy ----
 ## this will fail as username is not created in dockerfile.. needs to be fixed
 echo "Copying SSH keys into container..."
-docker cp "/home/${USER_NAME}/.ssh" "$CONTAINER_NAME":/home/$USER_NAME/.ssh
-echo "Successfully copied .ssh to docker container .ssh"
 docker exec "$CONTAINER_NAME" bash -lc "mkdir -p /home/$USER_NAME/.ssh"
 docker cp "/home/${USER_NAME}/.ssh/." "$CONTAINER_NAME":/home/$USER_NAME/.ssh/
 echo "Successfully copied hidden files"
@@ -108,6 +106,7 @@ docker exec "$CONTAINER_NAME" bash -lc "
   chmod 600 /home/$USER_NAME/.ssh/* || true
 "
 echo "Successfully changed the file permissions of docker .ssh directories"
+
 
 # ---- Kaggle keys copy ---
 # echo "Copying kaggle keys into container...."
