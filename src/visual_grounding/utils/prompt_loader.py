@@ -41,3 +41,6 @@ def prompt_for_entity_extraction(prompt: dict, caption: str):
     caption_prompt = get_user_prompt_for_entity_extraction(prompt=prompt, caption=caption)
 
     return system_prompt, caption_prompt
+
+def load_prompt_for_entity_segmentation(prompt_path: str):
+    pass

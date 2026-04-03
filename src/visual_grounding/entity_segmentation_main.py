@@ -1,17 +1,44 @@
-import logging
-import torch
-import numpy as np
-from PIL import Image
-from typing import Optional
+# import logging
+# import torch
+# import numpy as np
+# from PIL import Image
 
-from transformers import Sam3Model, Sam3Processor
+# from visual_grounding.models.sam3_model import Sam_Segementation
+# from visual_grounding.config.config_loader import ConfigLoader
 
-from visual_grounding.config.config_loader import ConfigLoader
+# logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
+# class EntitySegementation:
 
-class EntitySegementation:
+#     """
+#     Wraps SAM 3 (HuggingFace Transformers) for text-prompted instance segmentation.
 
-    """
-    Wraps SAM 3 (HuggingFace Transformers) for text-prompted instance segmentation.
-    """
+#     Loads the SAM 3 model once in __init__ and exposes a single
+#     segmentation() method that accepts an image path + caption and
+#     returns a JSON-serialisable list of per-instance results.
+#     """
+
+#     def __init__(self, config_path: str) -> None:
+#         self.config = ConfigLoader(config_path)
+#         self.input_folder = self.config.get_stage_input_folder(validate=True)
+#         self.output_folder = self.config.get_output_folder()
+#         self.batch_size = self.config.get_batch_size()
+#         self.score_threshold = self.config.get_use_count_hint()
+#         self.prompt_path = self.config.get_prompt_path()
+
+#         logger.info("Initialising SAM 3 model....")
+#         self.model = Sam_Segementation(config_path)
+#         logger.info("SAM 3 model ready.")
+
+#     def segmentation(self, image_path: str, caption: str) -> list[dict]:
+#         """
+#         Run SAM 3 segmentation for all entities in a caption on one image.
+
+#         Flow:
+#             1. Load image from image_path as PIL image
+#             2. Given the dictionary from stage 1 for each image_path as the parameter, for each entity format a text prompt using YAML templates
+#             3. Call Entity
+#         """
+
+        
+

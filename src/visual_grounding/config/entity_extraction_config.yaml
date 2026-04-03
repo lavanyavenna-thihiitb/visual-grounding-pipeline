@@ -16,7 +16,8 @@ model_name: "qwen"
 paths:
   input_folder: ""
   prompt_path: "src/visual_grounding/prompts/entity_extraction_prompt.yaml"
-  output_folder: "outputs/stage1"
+  output_folder: "outputs"
+  test_jsonl: "test_dataset.jsonl"
 
 CUDA_DEVICES: "0,1,2,3"
 batch_size: 30

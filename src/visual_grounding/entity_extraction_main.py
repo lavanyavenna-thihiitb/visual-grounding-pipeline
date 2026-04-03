@@ -58,7 +58,7 @@ class EntityExtractor:
             logger.warning("No JSON object found in Qwen Output: %r", raw_output)
             return None
 
-        clened = brace_match.group(0)
+        cleaned = brace_match.group(0)
 
         try:
             parsed = json.loads(cleaned)

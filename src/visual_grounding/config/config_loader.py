@@ -20,6 +20,9 @@ class ConfigLoader:
     def get_input_folder(self):
         return self.config["paths"]["input_folder"]
 
+    def get_test_jsonl(self):
+        return self.config["paths"]["test_jsonl"]
+
     def get_cuda_devices(self):
         return self.config.get("CUDA_DEVICES")
 
