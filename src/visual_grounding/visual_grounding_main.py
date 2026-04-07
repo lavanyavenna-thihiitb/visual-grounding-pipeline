@@ -39,7 +39,7 @@ def build_flat_captions(records: list[dict], output_folder: Path) -> tuple[list[
             skipped+=1
             continue
 
-        captions = record.get("captions", {})
+        captions = record.get("caption", {})
         for caption_type, caption_text in captions.items():
             if not caption_text or not caption_text.strip():
                 logger.warning(

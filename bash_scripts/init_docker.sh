@@ -75,6 +75,7 @@ else
     -v "$TMP_CACHE":/tmp \
     -v "$VLLM_CACHE":/vllm_cache \
     -v "$ENVIRONMENT_MOUNT":/Environments \
+    -v /fsxvision_new:/fsxvision_new \
     \
     -e HF_HOME=/hf_cache \
     -e HF_HUB_CACHE=/hf_cache/hub \

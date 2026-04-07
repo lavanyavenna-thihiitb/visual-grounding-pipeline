@@ -1,7 +1,3 @@
-# List[str]  →  EntityExtractor  →  List[{"entities": [...], "counts": {...}}]
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'src'))
 import json
 import re
 import logging
@@ -147,7 +143,7 @@ class EntityExtractor:
 if __name__ == "__main__":
 
     logging.basicConfig(
-        filename='entity_extraction.log',
+        filename='entity_extraction_1.log',
         filemode='a',
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s — %(message)s"

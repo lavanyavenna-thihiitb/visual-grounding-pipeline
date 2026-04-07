@@ -3,7 +3,7 @@
 # import numpy as np
 # from PIL import Image
 
-# from visual_grounding.models.sam3_model import Sam_Segementation
+# from visual_grounding.models.sam3_model import Sam3Segementation
 # from visual_grounding.config.config_loader import ConfigLoader
 
 # logger = logging.getLogger(__name__)
@@ -19,16 +19,10 @@
 #     """
 
 #     def __init__(self, config_path: str) -> None:
-#         self.config = ConfigLoader(config_path)
-#         self.input_folder = self.config.get_stage_input_folder(validate=True)
-#         self.output_folder = self.config.get_output_folder()
-#         self.batch_size = self.config.get_batch_size()
-#         self.score_threshold = self.config.get_use_count_hint()
-#         self.prompt_path = self.config.get_prompt_path()
-
-#         logger.info("Initialising SAM 3 model....")
-#         self.model = Sam_Segementation(config_path)
-#         logger.info("SAM 3 model ready.")
+        
+#         #sam3 model
+#         self.model = Sam3Segementation(config_path)
+#         self.batch_size = self.model.config_loader.get_batch_size()
 
 #     def segmentation(self, image_path: str, caption: str) -> list[dict]:
 #         """
@@ -37,7 +31,6 @@
 #         Flow:
 #             1. Load image from image_path as PIL image
 #             2. Given the dictionary from stage 1 for each image_path as the parameter, for each entity format a text prompt using YAML templates
-#             3. Call Entity
 #         """
 
         

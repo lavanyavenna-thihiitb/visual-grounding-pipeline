@@ -3,7 +3,6 @@ models:
     name: "facebook/sam3"
     params:
       torch_dtype: "float16"
-      device_map: "auto"
       trust_remote_code: true
     inference_params:
       score_threshold: 0.50

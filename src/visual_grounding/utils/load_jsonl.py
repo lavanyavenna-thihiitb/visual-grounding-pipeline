@@ -34,7 +34,7 @@ def load_test_jsonl(jsonl_path_str: str) -> list[dict]:
                 continue
 
             # Validate required keys
-            if "image_path" not in record or "captions" not in record:
+            if "image_path" not in record or "caption" not in record:
                 logger.warning(
                     "Skipping line %d - missing 'image_path' or 'captions' key.", line_no
                 )

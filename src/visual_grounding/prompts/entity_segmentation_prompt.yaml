@@ -20,6 +20,6 @@ prompt_templates:
 #   "find exactly 5 children
 #    find all dogs"
 multi_entity:
-  seperator: "\n"
+  seperator: ","
 
 
