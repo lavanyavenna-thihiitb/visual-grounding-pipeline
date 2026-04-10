@@ -11,7 +11,7 @@ models:
 model_name: "sam3"
 
 paths:
-  input_folder: "outputs/stage1"
+  input_folder: "outputs_new"
   prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
   output_folder: "outputs/stage2"  # Writes masks + metadata here
 

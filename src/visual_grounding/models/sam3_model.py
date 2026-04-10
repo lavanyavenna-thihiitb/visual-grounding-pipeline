@@ -4,7 +4,7 @@ import logging
 import torch
 import numpy as np
 from PIL import Image
-from typing import Any
+from typing import Any, Optional
 
 from transformers import Sam3Model, Sam3Processor
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Sam3_Segmentation:
 
-    def __init__(self, config_path: str) -> None:
+    def __init__(self, config_path: str, device: Optional[str] = None) -> None:
         self.config_loader = ConfigLoader(config_path)
         self.model_type = self.config_loader.get_model_type()
         self.model_name = self.config_loader.get_model_name()
@@ -22,7 +22,11 @@ class Sam3_Segmentation:
         self.score_threshold = self.config_loader.get_score_threshold(self.model_type)
         self.use_count_hint = self.config_loader.get_use_count_hint(self.model_type)
 
-        self.device = self._resolve_device()
+        if device:
+            self.device = torch.device(device)
+        else:
+            self.device = self._resolve_device()
+
         logger.info(f"The device ---- {self.device}")
 
         self.processor, self.model = self.load_model()
@@ -144,11 +148,3 @@ if __name__ == "__main__":
     visualize_masks(image_path=image_path, masks=results["masks"], output_path=output_path)
 
     logger.info(f"Saved visualization to {output_path}")
-
-
-
-        
-
-        
-
-

@@ -2,12 +2,93 @@ import logging
 import argparse
 from pathlib import Path
 import json
+import shutil
 
 from visual_grounding.config.config_loader import ConfigLoader
 from visual_grounding.utils.load_jsonl import load_test_jsonl
 from visual_grounding.entity_extraction_main import EntityExtractor
 
 logger = logging.getLogger(__name__)
+
+
+def load_from_test_jsonl(jsonl_path: Path) -> list[dict]:
+    """
+    Reads records from a test JSONL file.
+ 
+    Expected format — one JSON object per line:
+ 
+        {
+            "image_path": "/path/to/image.jpg",
+            "caption": {
+                "short_caption":    "...",
+                "medium_caption":   "...",
+                "long_caption":     "...",
+                "visual_caption":   "...",
+                "semantic_caption": "..."
+            }
+        }
+ 
+    Notes:
+        - The key is "caption" (singular), not "captions".
+        - All caption types are processed — short, medium, long,
+          visual, and semantic.
+        - Lines that are malformed or missing required keys are
+          skipped with a warning.
+    """
+    records   = []
+ 
+    if not jsonl_path.exists():
+        raise FileNotFoundError(f"test_jsonl not found at: {jsonl_path}")
+ 
+    with open(jsonl_path, "r") as f:
+        for line_no, line in enumerate(f, start=1):
+            line = line.strip()
+            if not line:
+                continue
+ 
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as e:
+                logger.warning("Skipping malformed line %d: %s", line_no, e)
+                continue
+ 
+            if "image_path" not in record or "caption" not in record:
+                logger.warning(
+                    "Skipping line %d — missing 'image_path' or 'caption' key.",
+                    line_no
+                )
+                continue
+ 
+            records.append(record)
+ 
+    logger.info("Loaded %d valid records from %s", len(records), jsonl_path)
+    return records
+ 
+def load_from_input_folder(input_folder: Path) -> list[dict]:
+    """
+    Reads image files from the input folder.
+    Each image is treated as a record with no captions — placeholder
+    for future non-test mode implementation.
+    """
+ 
+    if not input_folder.exists():
+        raise FileNotFoundError(f"Input folder not found at: {input_folder}")
+ 
+    image_extensions = {".jpg", ".jpeg", ".png", ".webp"}
+    records = []
+ 
+    for image_file in sorted(input_folder.rglob("*")):
+        if image_file.suffix.lower() in image_extensions:
+            records.append({
+                "image_path": str(image_file),
+                "caption": {},
+            })
+ 
+    logger.info(
+        "Loaded %d images from input folder: %s", len(records), input_folder
+    )
+    return records
+ 
 
 def build_flat_captions(records: list[dict], output_folder: Path) -> tuple[list[str], list[dict]]:
     """
@@ -79,21 +160,33 @@ def write_results(index_map: list[dict], results: list[dict], output_folder: Pat
             "counts": result["counts"],
         })
 
-        #Write one entities.jsonl per image
-        for img_stem, lines in per_image.items():
-            img_output_dir = output_folder / img_stem
-            img_output_dir.mkdir(parents=True, exist_ok=True)
+    #Write one entities.jsonl per image
+    for img_stem, lines in per_image.items():
+        image_path = next( meta["image_path"] for meta in index_map if meta["img_stem"] == img_stem)
+        img_output_dir = output_folder / img_stem
+        img_output_dir.mkdir(parents=True, exist_ok=True)
 
-            output_file = img_output_dir / "entities.jsonl"
-            with open(output_file, "w") as f:
-                for line in lines:
-                    f.write(json.dumps(line) + "\n")
-
-
-            logger.info("Written %d lines to %s", len(lines), output_file)
+        output_file = img_output_dir / "entities.jsonl"
+        with open(output_file, "w") as f:
+            for line in lines:
+                f.write(json.dumps(line) + "\n")
 
 
-def run_pipeline(extraction_config: str) -> None:
+        logger.info("Written %d lines to %s", len(lines), output_file)
+
+        # shutil.copy2 preserves metadata (timestamps etc.)
+        src_image = Path(image_path)
+        if src_image.exists():
+            dst_image = img_output_dir / src_image.name
+            shutil.copy2(src_image, dst_image)
+            logger.info("Copied image to %s", dst_image)
+        else:
+            logger.warning(
+                "Image not found at %s — skipping copy.", image_path
+            )
+
+
+def run_pipeline(extraction_config: str, test_mode: bool) -> None:
     """
     Orchestrates the full Stage 1 pipeline:
         1. Load config
@@ -114,7 +207,13 @@ def run_pipeline(extraction_config: str) -> None:
 
     # Load test JSONL
 
-    records = load_test_jsonl(config.get_test_jsonl())
+    if test_mode:
+        logger.info("Test mode — loading records from test JSONL.")
+        records = load_from_test_jsonl(Path(config.get_test_jsonl()))
+
+    else:
+        logger.info("Production mode — loading records from input folder.")
+        records = load_from_input_folder(Path(config.get_input_folder()))
 
     if not records:
         logger.error("No valid records found in test JSONL. Existing.")
@@ -125,6 +224,7 @@ def run_pipeline(extraction_config: str) -> None:
 
     if not flat_captions:
         logger.info("All records already processed. Nothing to do.")
+        return
 
     # Run entity extraction
 
@@ -156,13 +256,22 @@ def cli():
     parser.add_argument(
         "--extraction_config",
         type=str,
-        required=True,
+        default="src/visual_grounding/config/entity_extraction_config.yaml",
         help="Path to entity_extraction_config.yaml",
+    )
+
+    parser.add_argument(
+        "--test_extraction",
+        action="store_true",
+        default=False,
+        help=("If set, reads records from the test JSONL file specified in config "
+            "under paths.test_jsonl. If not set, reads images from paths.input_folder."),
     )
 
     args = parser.parse_args()
 
-    run_pipeline(extraction_config=args.extraction_config)
+    run_pipeline(extraction_config=args.extraction_config,
+                 test_mode=args.test_extraction)
 
 
 if __name__ == "__main__":
