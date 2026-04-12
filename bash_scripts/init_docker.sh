@@ -76,6 +76,7 @@ else
     -v "$VLLM_CACHE":/vllm_cache \
     -v "$ENVIRONMENT_MOUNT":/Environments \
     -v /fsxvision_new:/fsxvision_new \
+    -v /fsx/lavanya.venna/.ssh:/home/lavanya.venna/.ssh \
     \
     -e HF_HOME=/hf_cache \
     -e HF_HUB_CACHE=/hf_cache/hub \
@@ -95,18 +96,6 @@ else
     "$IMAGE_NAME" \
     bash
 fi
-
-# ---- SSH Keys copy ----
-## this will fail as username is not created in dockerfile.. needs to be fixed
-echo "Copying SSH keys into container..."
-docker exec "$CONTAINER_NAME" bash -lc "mkdir -p /home/$USER_NAME/.ssh"
-docker cp "/home/${USER_NAME}/.ssh/." "$CONTAINER_NAME":/home/$USER_NAME/.ssh/
-echo "Successfully copied hidden files"
-docker exec "$CONTAINER_NAME" bash -lc "
-  chmod 700 /home/$USER_NAME/.ssh &&
-  chmod 600 /home/$USER_NAME/.ssh/* || true
-"
-echo "Successfully changed the file permissions of docker .ssh directories"
 
 
 # ---- Kaggle keys copy ---

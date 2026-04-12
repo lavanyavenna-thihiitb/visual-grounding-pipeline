@@ -64,7 +64,7 @@ class Sam3_Segmentation:
 
         return processor, model
     
-    def generate_masks_bboxes(self, image_path: str, formatted_prompt: str):
+    def generate_masks_bboxes(self, input: dict, image_path: str, formatted_prompt: str):
         """
         Run SAM3 on a single image path + prompt.
 
@@ -107,6 +107,10 @@ class Sam3_Segmentation:
         scores = results["scores"]
 
         return {
+            "img_folder": input["sub_folder"],
+            "image": input["image"],
+            "entity": input["entity"],
+            "count": input["count"],
             "masks": masks,
             "bboxes": bboxes,
             "scores": scores,
@@ -136,8 +140,15 @@ if __name__ == "__main__":
     CONFIG_PATH = "src/visual_grounding/config/entity_segmentation_config.yaml"
     segmentor = Sam3_Segmentation(CONFIG_PATH)
 
+    input = {}
+    input["sub_folder"] = image_path
+    input["image"] = image_path
+    input["prompt"] = formatted_prompt
+    input["entity"] = caption_dict["entities"]
+    input["count"] = caption_dict["counts"]
+
     #Results
-    results = segmentor.generate_masks_bboxes(image_path, formatted_prompt)
+    results = segmentor.generate_masks_bboxes(input, image_path, formatted_prompt)
 
     logger.info(f"The number of masks generated are: {len(results['masks'])}")
 

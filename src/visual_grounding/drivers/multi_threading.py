@@ -35,7 +35,7 @@ class ModelSegmentation:
         
         #Processes a batch sequentially (no internal batching) - SAM3
         for item in batch:
-            outputs.append(self.model.generate_masks_bboxes(item["image"], item["prompt"]))
+            outputs.append(self.model.generate_masks_bboxes(item, item["image"], item["prompt"]))
 
         return outputs
     

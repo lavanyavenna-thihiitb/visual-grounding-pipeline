@@ -13,6 +13,14 @@ __pycache__/
 
 # Ignore outputs folder
 outputs
+outputs_new/
+outputs_seg/
 
 # Ignore .egg-info
 src/visual_grounding.egg-info/
+
+# Ignore .jpg
+*.jpg
+
+#Ignore .jsonl
+*.jsonl

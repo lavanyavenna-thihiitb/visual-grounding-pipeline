@@ -13,7 +13,7 @@ model_name: "sam3"
 paths:
   input_folder: "outputs_new"
   prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
-  output_folder: "outputs/stage2"  # Writes masks + metadata here
+  output_folder: "outputs_seg/"  # Writes masks + metadata here
 
 CUDA_DEVICES: "4,5,6,7"
 batch_size: 1
