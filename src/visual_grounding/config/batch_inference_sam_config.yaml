@@ -1,0 +1,45 @@
+models:
+  - type: "sam3"
+    name: "sam3_image_model"
+    
+    params:
+      device_map: "manual"            # handled via CUDA_DEVICES
+      torch_dtype: "bfloat16"         # recommended for Ampere GPUs
+      use_tf32: true                  # enable TF32 for speed
+      inference_mode: true            # disables gradients
+
+    transform_params:
+      random_resize_params:
+        sizes: 1008
+        max_size: 1008
+        square: true
+        consistent_transform: false
+      
+      normalize_params:
+        mean: [0.5, 0.5, 0.5]
+        std: [0.5, 0.5, 0.5]
+
+    postprocess_params:
+      iou_type: "segm"
+      detection_threshold: 0.5
+      max_dets_per_img: -1
+      use_original_sizes_box: true
+      use_original_sizes_mask: true
+      convert_mask_to_rle: false
+      to_cpu: false
+
+model_name: "sam3"
+
+paths:
+  input_folder: ""
+  input_jsonl_file: "/fsxvision_new/jyothi.swaroopa/grounded_captioning_ops/test3.jsonl"
+  output_folder: "outputs_new"
+  output_jsonl_file: "outputs/test.jsonl"
+  test_jsonl: "test_dataset.jsonl"
+  mask_folder: "masks/"
+  prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
+  bpe_path: "dependencies/sam3/sam3/assets/bpe_simple_vocab_16e6.txt.gz"
+
+runtime:
+  CUDA_DEVICES: "0,1,2,3"
+  batch_size: 100

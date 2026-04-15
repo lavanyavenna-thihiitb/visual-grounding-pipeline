@@ -19,6 +19,9 @@ class ConfigLoader:
 
     def get_input_folder(self):
         return self.config["paths"]["input_folder"]
+    
+    def get_input_jsonl_file(self):
+        return self.config["paths"]["input_jsonl_file"]
 
     def get_test_jsonl(self):
         return self.config["paths"]["test_jsonl"]
@@ -31,6 +34,12 @@ class ConfigLoader:
 
     def get_output_folder(self):
         return self.config["paths"]["output_folder"]
+    
+    def get_mask_folder(self):
+        return self.config["paths"]["mask_folder"]
+    
+    def get_output_jsonl_file(self):
+        return self.config["paths"]["output_jsonl_file"]
 
     def get_prompt_path(self):
         return self.config["paths"]["prompt_path"]
@@ -122,4 +131,16 @@ class ConfigLoader:
             
         return folder
     
+    def get_sam3_batch_params(self, model_type=None):
+        return self.get_model_by_type(model_type).get("params", {}) or {}
+    
+    def get_sam3_batch_transform_params(self, model_type=None):
+        return self.get_model_by_type(model_type).get("transform_params", {}) or {}
+    
+    def get_sam3_batch_postprocess_params(self, model_type=None):
+        return self.get_model_by_type(model_type).get("postprocess_params", {}) or {}
+    
+    def get_bpe_path(self):
+        return self.config["paths"]["bpe_path"]
+
 

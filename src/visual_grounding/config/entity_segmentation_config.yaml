@@ -5,15 +5,16 @@ models:
       torch_dtype: "float16"
       trust_remote_code: true
     inference_params:
-      score_threshold: 0.50
+      score_threshold: 0.30
       use_count_hint: true
 
 model_name: "sam3"
 
 paths:
-  input_folder: "outputs_new"
+  # input_folder: "outputs_new"
+  input_folder: "/fsxvision_new/jyothi.swaroopa/grounded_captioning_ops/test3.jsonl"
   prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
-  output_folder: "outputs_seg/"  # Writes masks + metadata here
+  output_folder: "outputs_seg/test.jsonl"  # Writes masks + metadata here
 
 CUDA_DEVICES: "4,5,6,7"
 batch_size: 1

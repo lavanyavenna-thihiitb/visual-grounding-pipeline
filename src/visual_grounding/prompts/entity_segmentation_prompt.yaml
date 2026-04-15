@@ -12,7 +12,7 @@ prompt_templates:
 
   # Example output: "find dog", Used when: count = 1 — no need to say "find exactly 1 dog", which reads unnaturally and may confuse SAM 3's text encoder
   find_one:
-    template: "find {entity}"
+    template: "{entity}"
 
 
 # each entity prompt on its own line

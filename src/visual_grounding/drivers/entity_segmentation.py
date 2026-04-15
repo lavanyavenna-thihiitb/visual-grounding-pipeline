@@ -18,8 +18,9 @@ Expected folder structure:
         img_folder_2/
             entities.jsonl
             image.jpg
-"""
 
+"""
+import time
 from pathlib import Path
 import logging
 import json
@@ -482,8 +483,11 @@ def run_segmentation(config_path: str, logger: logging.Logger) -> None:
     multimodel = MultiModel(
         model_cls=Sam3_Segmentation,
         config_path=config_path,
-        gpu_ids=[0, 1, 2, 3, 4, 5, 6, 7],  # or [0] if single GPU
+        # gpu_ids=[0,0,0,0,0 ,1,1,1,1,1, 2,2,2,2,2,3,3,3,3, 3, 4, 4,4,4,4, 5,5,5,5,5, 6,6,6,6,7,7,7,7, 7],  # or [0] if single GPU
+        gpu_ids = [0,1,2,3,4,5,6,7]
     ) 
+
+    a = time.time()
 
     for img_folder in iter_valid_folders(input_folder, logger):
 
@@ -520,23 +524,25 @@ def run_segmentation(config_path: str, logger: logging.Logger) -> None:
             continue
 
         # Visualize results
-        try:
-            logger.info("Generating visualizations")
-            visualize_masks_for_output_directory(img_output_folder, logger)
-            logger.info("Visualizations complete")
-        except Exception as e:
-            logger.error(f"Visualization failed for {img_folder.name}: {e}")
+        # try:
+        #     logger.info("Generating visualizations")
+        #     visualize_masks_for_output_directory(img_output_folder, logger)
+        #     logger.info("Visualizations complete")
+        # except Exception as e:
+        #     logger.error(f"Visualization failed for {img_folder.name}: {e}")
 
         processed += 1
         logger.info(f"Successfully processed: {img_folder.name}")
 
-        break
+    b = time.time()
 
      # Cleanup
     logger.info(f"\n{'=' * 80}")
     logger.info(f"Pipeline complete. Processed {processed} image folder(s)")
     logger.info("Unloading models and freeing GPU memory")
     logger.info(f"{'=' * 80}\n")
+
+    print(f"The time taken to run is: {b-a}")
     
     multimodel.unload()
     logger.info("All models unloaded successfully")

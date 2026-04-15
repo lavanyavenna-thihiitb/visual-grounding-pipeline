@@ -48,6 +48,14 @@ def prompt_for_entity_extraction(prompt: dict, caption: str):
 
     return system_prompt, caption_prompt
 
+# def prompt_for_caption(prompt: dict, caption: str):
+
+#     system_prompt = get_system_prompt_for_entity_extraction(prompt=prompt)
+#     #caption_prompt = get_user_prompt_for_entity_extraction(prompt=prompt, caption=caption)
+#     caption_prompt = get_user_prompt_for_caption_extraction(prompt=prompt, caption=caption)
+
+#     return system_prompt, caption_prompt
+
 def format_prompt_for_entity_segmentation(entites:list[str], counts: dict[str, int], prompt_file: str) -> str:
     """
     Format multi-entity prompt using YAML templates.

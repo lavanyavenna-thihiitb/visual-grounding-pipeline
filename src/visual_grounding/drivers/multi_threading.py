@@ -23,7 +23,7 @@ class ModelSegmentation:
         self.gpu = gpu_id
 
         # Set device
-        torch.cuda.set_device(gpu_id)
+        # torch.cuda.set_device(gpu_id)
         # Initialize model
         self.model = model_cls(config_path, device=f"cuda:{gpu_id}")
 
