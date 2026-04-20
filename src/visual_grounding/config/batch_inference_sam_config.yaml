@@ -33,13 +33,12 @@ model_name: "sam3"
 paths:
   input_folder: ""
   input_jsonl_file: "/fsxvision_new/jyothi.swaroopa/grounded_captioning_ops/test3.jsonl"
-  output_folder: "outputs_new"
-  output_jsonl_file: "outputs/test.jsonl"
-  test_jsonl: "test_dataset.jsonl"
+  output_folder: "outputs_new/"
   mask_folder: "masks/"
+  processed_file: "processed_images_using_sam3.txt"
   prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
   bpe_path: "dependencies/sam3/sam3/assets/bpe_simple_vocab_16e6.txt.gz"
 
 runtime:
   CUDA_DEVICES: "0,1,2,3"
-  batch_size: 100
+  batch_size: 3

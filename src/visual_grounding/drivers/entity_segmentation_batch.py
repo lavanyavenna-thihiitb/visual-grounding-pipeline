@@ -1,6 +1,5 @@
 # Resumability is lost
 # Also use plot_results method to save visualizations to the folder
-# Use caching of images
 # Add multiprocessor
 
 import logging
@@ -13,7 +12,20 @@ import numpy as np
 
 from visual_grounding.config.config_loader import ConfigLoader
 from visual_grounding.utils.prompt_loader import format_prompt_for_entity_segmentation
-from visual_grounding.models.sam3_batch_model import Sam3_Batch_Segmentation
+from visual_grounding.models.sam3_batch_cache_model import Sam3_Batch_Segmentation
+from visual_grounding.utils.visualize import visualize_masks
+
+def load_processed_set(processed_file: Path) -> set:
+    """Load already-processed image paths into a set for O(1) lookup."""
+    if not processed_file.exists():
+        return set()
+    with open(processed_file, 'r') as f:
+        return {line.strip() for line in f if line.strip()}
+    
+def mark_as_processed(processed_file: Path, image_path: str):
+    """Append a single image path to the processed log."""
+    with open(processed_file, "a") as f:
+        f.write(image_path + "\n")
 
 def transform_record(record: dict) -> dict:
     """
@@ -143,7 +155,8 @@ def format_entities_with_prompts(entities: List[str], counts: dict[str, int], pr
 def process_jsonl_to_batches(
         input_file: Path,
         prompt_path: str, 
-        batch_size: int = 100,
+        processed_file_path: Path,
+        batch_size: int = 3,
         logger: Optional[logging.Logger] = None):
     
     """
@@ -168,6 +181,11 @@ def process_jsonl_to_batches(
         - metadata_map: dict to reconstruct output by caption_type
     """
 
+    already_processed = load_processed_set(processed_file_path)  # loaded once, O(1) lookups
+
+    if logger:
+        logger.info(f"Resuming: {len(already_processed)} images already processed")
+
     batch = []
     metadata = {}
     processed = 0
@@ -185,6 +203,9 @@ def process_jsonl_to_batches(
                 image_path = transformed_record["image_path"]
                 captions = transformed_record["captions"]
 
+                if image_path in already_processed:
+                    continue
+
                 if image_path not in metadata:
                     metadata[image_path] = {
                         "image_path": image_path,
@@ -196,23 +217,20 @@ def process_jsonl_to_batches(
 
                 # Format prompts for each entity
                 entity_prompts = format_entities_with_prompts(entities, counts, prompt_path)
-                
-                # Create one batch item per entity
-                for item in entity_prompts:
-                    batch.append({
-                        "image_path": transformed_record["image_path"],
-                        "prompt": item["prompt"],
-                        "entity": item["entity"], 
-                        "count": item["count"]
-                    })
 
-                    processed+=1
+                batch.append({
+                    "image_path": transformed_record["image_path"],
+                    "prompt": [ep["prompt"] for ep in entity_prompts],
+                    "entities": [ep["entity"] for ep in entity_prompts],
+                    "count": [ep["count"] for ep in entity_prompts]
+                })
 
-                    # Yield batch when full
-                    if len(batch) >= batch_size:
-                        yield batch, metadata
-                        batch = []
-                        metadata = {}
+                processed+=1
+
+                if len(batch) >= batch_size:
+                    yield batch, metadata
+                    batch = []
+                    metadata = {}
                 
 
             except Exception as e:
@@ -348,6 +366,18 @@ def save_outputs(metadata: dict, grouped_results_by_img_entities: dict, output_f
 
             if logger:
                 logger.info(f"Saved {out_file}")
+
+        # --- Visualization (once per image, across all unique entities) ---
+        if entity_results:
+            visualize_masks(
+                image_path=image_path,
+                entity_results=entity_results,
+                output_dir=image_output_dir,
+                logger=logger
+            )
+        else:
+            if logger:
+                logger.info(f"No segmentation results for {image_stem}, skipping visualization")
  
  
 def run_batch_segmentation(config_path: str, logger: logging.Logger):
@@ -355,26 +385,28 @@ def run_batch_segmentation(config_path: str, logger: logging.Logger):
     config_loader = ConfigLoader(config_path)
 
     input_jsonl_file = Path(config_loader.get_input_jsonl_file())
-    output_jsonl_file = Path(config_loader.get_output_jsonl_file())
-    output_folder = Path(config_loader.get_output_folder())
-    prompt_path = config_loader.get_prompt_path()
-    batch_size = config_loader.get_batch_size() or 100
     mask_output_dir = Path(config_loader.get_mask_folder())
+    output_folder = Path(config_loader.get_output_folder())
+    processed_file = Path(config_loader.get_processed_file())
+    prompt_path = config_loader.get_prompt_path()
+    batch_size = config_loader.get_batch_size() or 3
 
     logger.info(f"Input JSONL: {input_jsonl_file.resolve()}")
-    logger.info(f"Output JSONL: {output_jsonl_file.resolve()}")
     logger.info(f"Prompt template: {prompt_path}")
 
     processed = 0
 
     sam_segmentor = Sam3_Batch_Segmentation(config_path, logger, device="cuda:3")
 
-    for batch_num, (batch, metadata) in enumerate(process_jsonl_to_batches(input_file=input_jsonl_file, prompt_path=prompt_path, batch_size=batch_size,logger=logger), start=1):
+    for batch_num, (batch, metadata) in enumerate(process_jsonl_to_batches(input_file=input_jsonl_file, prompt_path=prompt_path, processed_file_path=processed_file, batch_size=batch_size,logger=logger), start=1):
+
+        print(f"The size of the batch is: {len(batch)}")
 
         processed += len(batch)
         logger.info(f"Batch {batch_num}: {len(batch)} records | Total processed: {processed}")
 
         try:
+
             results = sam_segmentor.generate_masks_bboxes_batch(batch)
 
             # valid_mask_count = count_results_with_masks(results)
@@ -389,7 +421,9 @@ def run_batch_segmentation(config_path: str, logger: logging.Logger):
                 logger=logger
             )
 
-            logger.info(f"Results are: {results}")
+            # Mark each image in this batch as done
+            for item in batch:
+                mark_as_processed(processed_file, item["image_path"])
 
         except Exception as e:
             logger.info(f"Can't run sam segmentor!!!, {e}")

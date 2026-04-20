@@ -4,11 +4,11 @@ prompt_templates:
 
   # Example output: "find all children", Used when: Qwen returns count = -1 (generic plural, no number given)
   find_all:
-    template: "find all {entity}"
+    template: "all {entity}"
 
   # Example output: "find exactly 5 children", Used when: Qwen returns a specific count e.g. {'children': 5}
   find_exact:
-    template: "find exactly {count} {entity}"
+    template: "{count} {entity}"
 
   # Example output: "find dog", Used when: count = 1 — no need to say "find exactly 1 dog", which reads unnaturally and may confuse SAM 3's text encoder
   find_one:

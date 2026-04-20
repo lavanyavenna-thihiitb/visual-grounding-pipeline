@@ -16,9 +16,13 @@ from PIL import Image
 import random
 import torch
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 import logging
 import json
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.colors import to_rgba
+import random
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -123,47 +127,160 @@ def visualize_masks_for_output_directory(output_path: Path, logger: logging.Logg
         logger.info(f"Saved visualization: {output_file}")
 
 
-def visualize_masks(image_path: str, masks: List[torch.Tensor], output_path: str, alpha: float = 1):
+# def visualize_masks(image_path: str, masks: List[torch.Tensor], output_path: str, alpha: float = 1):
+#     """
+#     Overlay segmentation masks over the image.
+
+#     Args:
+#         image_path: path to original image
+#         masks: list of masks of shape (H, W)
+#         output_path: where to save visualization
+#         alpha: transparency of masks
+#     """
+
+#     # Load image
+#     image = Image.open(image_path).convert("RGB")
+#     image_np = np.array(image).astype(np.float32)
+
+#     overlay = image_np.copy()
+
+#     for i, mask in enumerate(masks):
+#         if mask is None:
+#             continue
+
+#         # 🔹 Convert torch.Tensor → numpy
+#         if isinstance(mask, torch.Tensor):
+#             mask = mask.detach().cpu().numpy()
+
+#         # Ensure binary mask
+#         mask = mask > 0
+
+#         # Generate deterministic color (better than random for debugging)
+#         color = np.array([
+#             (i * 50) % 255,
+#             (i * 80) % 255,
+#             (i * 110) % 255
+#         ])
+
+#         # Apply mask
+#         overlay[mask] = (
+#             (1 - alpha) * overlay[mask] +
+#             alpha * color
+#         )
+
+#     overlay = overlay.astype(np.uint8)
+
+#     Image.fromarray(overlay).save(output_path)
+
+
+
+def visualize_masks(
+    image_path: str,
+    entity_results: dict,
+    output_dir: Path,
+    logger: Optional[logging.Logger] = None
+):
     """
-    Overlay segmentation masks over the image.
+    Overlay all entity masks on the original image and save as a single visualization.
 
     Args:
-        image_path: path to original image
-        masks: list of masks of shape (H, W)
-        output_path: where to save visualization
-        alpha: transparency of masks
+        image_path: path to the original image
+        entity_results: {entity_name: {"entity": str, "count": int, "instances": [{"mask_path": str, "bbox": [...], "score": float}, ...]}}
+        output_dir: directory to save the visualization (same as image subfolder)
     """
 
-    # Load image
-    image = Image.open(image_path).convert("RGB")
-    image_np = np.array(image).astype(np.float32)
+    import pdb; pdb.set_trace()
 
-    overlay = image_np.copy()
+    image = np.array(Image.open(image_path).convert("RGB"))
+    h, w = image.shape[:2]
 
-    for i, mask in enumerate(masks):
-        if mask is None:
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    ax.imshow(image)
+
+    # Generate a distinct color per entity
+    rng = random.Random(42)  # fixed seed for reproducibility
+    entity_colors = {
+        entity: [rng.random(), rng.random(), rng.random()]
+        for entity in entity_results.keys()
+    }
+
+    legend_patches = []
+
+    for entity, entry in entity_results.items():
+        instances = entry.get("instances", [])
+        if not instances:
             continue
 
-        # 🔹 Convert torch.Tensor → numpy
-        if isinstance(mask, torch.Tensor):
-            mask = mask.detach().cpu().numpy()
+        color = entity_colors[entity]
+        color_with_alpha = to_rgba(color, alpha=0.45) #type: ignore
 
-        # Ensure binary mask
-        mask = mask > 0
+        for instance_idx, instance in enumerate(instances):
+            mask_path = instance.get("mask_path")
+            bbox = instance.get("bbox")
+            score = instance.get("score", 0.0)
 
-        # Generate deterministic color (better than random for debugging)
-        color = np.array([
-            (i * 50) % 255,
-            (i * 80) % 255,
-            (i * 110) % 255
-        ])
+            # --- Draw mask ---
+            if mask_path and Path(mask_path).exists():
+                mask = np.load(mask_path)  # shape: (H, W), bool or 0/1
 
-        # Apply mask
-        overlay[mask] = (
-            (1 - alpha) * overlay[mask] +
-            alpha * color
+                # Ensure binary
+                mask = mask.astype(bool)
+
+                # Create RGBA overlay
+                mask_overlay = np.zeros((h, w, 4), dtype=np.float32)
+                mask_overlay[mask] = color_with_alpha
+                ax.imshow(mask_overlay, interpolation="none")
+
+            # --- Draw bbox ---
+            if bbox is not None and len(bbox) == 4:
+                x1, y1, x2, y2 = bbox
+                rect = mpatches.FancyBboxPatch(
+                    (x1, y1), x2 - x1, y2 - y1,
+                    linewidth=1.5,
+                    edgecolor=color,
+                    facecolor="none",
+                    boxstyle="square,pad=0"
+                )
+                ax.add_patch(rect)
+
+                # Label: entity name + instance index if multiple + score
+                n_instances = len(instances)
+                label = f"{entity} ({score:.2f})" if n_instances == 1 else f"{entity}[{instance_idx}] ({score:.2f})"
+                ax.text(
+                    x1, y1 - 4,
+                    label,
+                    fontsize=7,
+                    color="white",
+                    fontweight="bold",
+                    bbox=dict(facecolor=color, alpha=0.7, pad=1, edgecolor="none")
+                )
+
+        # One legend entry per entity (regardless of instance count)
+        legend_patches.append(
+            mpatches.Patch(facecolor=color, alpha=0.7, label=entity) #type: ignore
         )
 
-    overlay = overlay.astype(np.uint8)
+    # Legend — place outside plot if many entities
+    if legend_patches:
+        ax.legend(
+            handles=legend_patches,
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1),
+            borderaxespad=0,
+            fontsize=7,
+            title="Entities",
+            title_fontsize=8,
+            framealpha=0.8
+        )
 
-    Image.fromarray(overlay).save(output_path)
+    ax.axis("off")
+    ax.set_title(Path(image_path).name, fontsize=9, pad=4)
+
+    plt.tight_layout()
+
+    vis_path = output_dir / "masks_visualization.jpg"
+    fig.savefig(vis_path, dpi=150, bbox_inches="tight", format="jpg")
+    plt.close(fig)
+
+    if logger:
+        logger.info(f"Saved visualization: {vis_path}")

@@ -97,7 +97,6 @@ class Sam3_Batch_Segmentation:
         datapoint.images = [SAMImage(data=pil_image, objects=[], size=[h, w])] #type: ignore
 
     def _add_text_prompt(self, datapoint, text_query):
-        global GLOBAL_COUNTER
 
         w, h = datapoint.images[0].size
 
@@ -120,6 +119,7 @@ class Sam3_Batch_Segmentation:
         )
 
         self.global_counter += 1
+        return self.global_counter - 1
     
     def load_model(self):
         from dependencies.sam3.sam3 import build_sam3_image_model
@@ -135,8 +135,19 @@ class Sam3_Batch_Segmentation:
     
     def generate_masks_bboxes_batch(self, inputs: List[Dict]) -> List[Dict]:
 
+        """
+        inputs: list of dicts, each with:
+            image_path: str
+            prompt: List[str]
+            entities: List[str]
+            count: List[int]
+        """
+
+        # Batch of 4 is taking - 60GB
+
         datapoints = []
-        raw_images = []
+        # Map prompt_id -> (image_path, entity, count, prompt_str)
+        prompt_id_map = {}
 
         # Build datapoints
         for item in inputs:
@@ -145,15 +156,23 @@ class Sam3_Batch_Segmentation:
 
             datapoint = self._create_datapoint()
             self._set_image(datapoint, image)
-            self._add_text_prompt(datapoint, item["prompt"]) # However, we may have multiple prompts for a single image, so we gotta deal with that 
+            # self._add_text_prompt(datapoint, item["prompt"]) # However, we may have multiple prompts for a single image, so we gotta deal with that 
 
-            # for prompt in item["prompt"]:
-            #     self._add_text_prompt(datapoint, prompt)
+            # Add each prompt and record and return ID
+            # import pdb; pdb.set_trace()
+            for prompt_str, entity, count in zip(item["prompt"], item["entities"], item["count"]):
+                prompt_id = self._add_text_prompt(datapoint, prompt_str)
+                prompt_id_map[prompt_id] = {
+                    "image_path": item["image_path"],
+                    "entity": entity,
+                    "count": count,
+                    "prompt": prompt_str
+                }
 
             datapoint = self.transform(datapoint)
-
             datapoints.append(datapoint)
-            raw_images.append(image)
+
+        print(f"The number of datapoints are: {len(datapoints)}")
 
         # Collate -> batch
         batch = collate(datapoints, dict_key="dummy")["dummy"]
@@ -161,7 +180,7 @@ class Sam3_Batch_Segmentation:
 
         # Forward 
         with torch.inference_mode():
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             outputs = self.model(batch)
 
         # Postprocessor
@@ -174,18 +193,18 @@ class Sam3_Batch_Segmentation:
 
         # 5. Format results (match your old structure)
         results = []
-        for i in range(1, len(processed)+1):
+        for prompt_id, meta in prompt_id_map.items():
 
-            input_item = inputs[i]  # align with processed index
+            result = processed.get(prompt_id, {})
 
             results.append({
-                "image_path": input_item["image_path"],
-                "entity": input_item["entity"],
-                "count": input_item["count"],
-                "prompt": input_item["prompt"],
-                "masks": processed[i]["masks"],
-                "bboxes": processed[i]["boxes"],
-                "scores": processed[i]["scores"],
+                "image_path": meta["image_path"],
+                "entity": meta["entity"],
+                "count": meta["count"],
+                "prompt": meta["prompt"],
+                "masks": result.get("masks", []),
+                "bboxes": result.get("boxes", []),
+                "scores": result.get("scores", []),
             })
 
         return results

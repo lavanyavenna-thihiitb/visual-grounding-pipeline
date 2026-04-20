@@ -23,8 +23,8 @@ class ConfigLoader:
     def get_input_jsonl_file(self):
         return self.config["paths"]["input_jsonl_file"]
 
-    def get_test_jsonl(self):
-        return self.config["paths"]["test_jsonl"]
+    def get_processed_file(self):
+        return self.config["paths"]["processed_file"]
 
     def get_cuda_devices(self):
         return self.config.get("CUDA_DEVICES")
