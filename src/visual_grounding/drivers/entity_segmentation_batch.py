@@ -1,4 +1,3 @@
-# Resumability is lost
 # Also use plot_results method to save visualizations to the folder
 # Add multiprocessor
 
@@ -212,11 +211,20 @@ def process_jsonl_to_batches(
                         "captions": captions
                     }
 
+                if logger:
+                    logger.info(f"Fetching unique entities and their counts for image - {image_path}")
+
                 # Extract unique entities and counts
                 entities, counts = get_unique_entities_with_counts(transformed_record["captions"])
 
+                if logger:
+                    logger.info(f"Formatting prompts for the entities and counts......")
+
                 # Format prompts for each entity
                 entity_prompts = format_entities_with_prompts(entities, counts, prompt_path)
+
+                if logger:
+                    logger.info(f"The total number of unique entities for image - {image_path} are {len(entity_prompts)}")
 
                 batch.append({
                     "image_path": transformed_record["image_path"],
@@ -228,6 +236,10 @@ def process_jsonl_to_batches(
                 processed+=1
 
                 if len(batch) >= batch_size:
+                    
+                    if logger:
+                        logger.info(f"Yielding batch of size: {len(batch)} along with it's metadata")
+
                     yield batch, metadata
                     batch = []
                     metadata = {}
@@ -239,6 +251,9 @@ def process_jsonl_to_batches(
                 continue
     
     if batch:
+        if logger:
+            logger.info(f"Yielding batch of size: {len(batch)} along with it's metadata")
+
         yield batch, metadata
 
 def save_mask(mask: np.ndarray, mask_dir: Path, entity_name: str, img_path: str, instance_idx: int) -> str:
@@ -262,9 +277,11 @@ def save_mask(mask: np.ndarray, mask_dir: Path, entity_name: str, img_path: str,
     np.save(str(mask_path), mask)
     return str(mask_path)
 
-def group_results_by_image_and_entity(results, mask_output_dir):
+def group_results_by_image_and_entity(results, mask_output_dir, logger):
 
     grouped = {}
+
+    logger.info(f"Grouping results by image and entity.....")
 
     for result in results:
         image_path = result["image_path"]
@@ -365,19 +382,19 @@ def save_outputs(metadata: dict, grouped_results_by_img_entities: dict, output_f
                 json.dump(output, f, indent=4)
 
             if logger:
-                logger.info(f"Saved {out_file}")
+                logger.info(f"Saved {out_file} for image {image_path}")
 
         # --- Visualization (once per image, across all unique entities) ---
-        if entity_results:
-            visualize_masks(
-                image_path=image_path,
-                entity_results=entity_results,
-                output_dir=image_output_dir,
-                logger=logger
-            )
-        else:
-            if logger:
-                logger.info(f"No segmentation results for {image_stem}, skipping visualization")
+        # if entity_results:
+        #     visualize_masks(
+        #         image_path=image_path,
+        #         entity_results=entity_results,
+        #         output_dir=image_output_dir,
+        #         logger=logger
+        #     )
+        # else:
+        #     if logger:
+        #         logger.info(f"No segmentation results for {image_stem}, skipping visualization")
  
  
 def run_batch_segmentation(config_path: str, logger: logging.Logger):
@@ -390,17 +407,20 @@ def run_batch_segmentation(config_path: str, logger: logging.Logger):
     processed_file = Path(config_loader.get_processed_file())
     prompt_path = config_loader.get_prompt_path()
     batch_size = config_loader.get_batch_size() or 3
+    cuda_device = f"cuda:{config_loader.get_cuda_devices()}"
 
+    logger.info(f"Loaded the configurations...")
     logger.info(f"Input JSONL: {input_jsonl_file.resolve()}")
+    logger.info(f"Output directory for storing masks is: {mask_output_dir.resolve()}")
+    logger.info(f"Output directory for storing ouputs is: {output_folder.resolve()}")
+    logger.info(f"File that stores the images processed so far is: {processed_file.resolve()}")
     logger.info(f"Prompt template: {prompt_path}")
 
     processed = 0
 
-    sam_segmentor = Sam3_Batch_Segmentation(config_path, logger, device="cuda:3")
+    sam_segmentor = Sam3_Batch_Segmentation(config_path, logger, device=cuda_device)
 
     for batch_num, (batch, metadata) in enumerate(process_jsonl_to_batches(input_file=input_jsonl_file, prompt_path=prompt_path, processed_file_path=processed_file, batch_size=batch_size,logger=logger), start=1):
-
-        print(f"The size of the batch is: {len(batch)}")
 
         processed += len(batch)
         logger.info(f"Batch {batch_num}: {len(batch)} records | Total processed: {processed}")
@@ -409,21 +429,29 @@ def run_batch_segmentation(config_path: str, logger: logging.Logger):
 
             results = sam_segmentor.generate_masks_bboxes_batch(batch)
 
-            # valid_mask_count = count_results_with_masks(results)
+            logger.info(f"Generated segmentation masks for - {len(results)}")
 
-            grouped_results_by_img_entities = group_results_by_image_and_entity(results, mask_output_dir)
+            valid_mask_count = count_results_with_masks(results)
+
+            logger.info(f"Number of valid mask count is: {valid_mask_count} out of {len(results)}")
+
+            grouped_results_by_img_entities = group_results_by_image_and_entity(results, mask_output_dir, logger)
 
             # Reconstruct output structure
-            batch_output = save_outputs(
+            save_outputs(
                 metadata=metadata,
                 grouped_results_by_img_entities=grouped_results_by_img_entities,
                 output_folder=output_folder,
                 logger=logger
             )
 
+            logger.info(f"Saved ouputs for batch of images")
+
             # Mark each image in this batch as done
             for item in batch:
                 mark_as_processed(processed_file, item["image_path"])
+
+            logger.info(f"Number of processed images so far are: {processed}")
 
         except Exception as e:
             logger.info(f"Can't run sam segmentor!!!, {e}")
@@ -436,14 +464,19 @@ if __name__ == "__main__":
 
     # Setting up logger
     logging.basicConfig(
+        filename="/opt/dlami/nvme/lavanya.venna/visual_grounding_outputs/logs/segmentation_batch_7.log",
+        filemode="a",
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='%(asctime)s [%(levelname)s] %(name)s — %(message)s',
+        force=True
     )
 
     logger = logging.getLogger(__name__)
 
     # Pass config file path
     config_path = "src/visual_grounding/config/batch_inference_sam_config.yaml"
+
+    logger.info(f"Loaded the config file from {config_path} to run batch segmentation using SAM3")
 
     try:
         run_batch_segmentation(config_path, logger)

@@ -76,7 +76,8 @@ else
     -v "$VLLM_CACHE":/vllm_cache \
     -v "$ENVIRONMENT_MOUNT":/Environments \
     -v /fsxvision_new:/fsxvision_new \
-    -v /fsx/lavanya.venna/.ssh:/home/lavanya.venna/.ssh \
+    -v /opt/dlami/nvme:/opt/dlami/nvme \
+    -v /fsx/"$USER_NAME"/.ssh:/home/"$USER_NAME"/.ssh \
     \
     -e HF_HOME=/hf_cache \
     -e HF_HUB_CACHE=/hf_cache/hub \

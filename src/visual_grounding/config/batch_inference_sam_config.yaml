@@ -32,13 +32,13 @@ model_name: "sam3"
 
 paths:
   input_folder: ""
-  input_jsonl_file: "/fsxvision_new/jyothi.swaroopa/grounded_captioning_ops/test3.jsonl"
-  output_folder: "outputs_new/"
-  mask_folder: "masks/"
-  processed_file: "processed_images_using_sam3.txt"
+  input_jsonl_file: "/fsxvision_new/jyothi.swaroopa/grounded_captioning_ops/ip-10-20-241-38/results_00006.jsonl"
+  output_folder: "/opt/dlami/nvme/lavanya.venna/visual_grounding_outputs/outputs_gpu_7"
+  mask_folder: "/opt/dlami/nvme/lavanya.venna/visual_grounding_outputs/masks_7"
+  processed_file: "/opt/dlami/nvme/lavanya.venna/visual_grounding_outputs/processed_images_using_sam3_7.txt"
   prompt_path: "src/visual_grounding/prompts/entity_segmentation_prompt.yaml"
   bpe_path: "dependencies/sam3/sam3/assets/bpe_simple_vocab_16e6.txt.gz"
 
 runtime:
-  CUDA_DEVICES: "0,1,2,3"
+  CUDA_DEVICES: "7"
   batch_size: 3

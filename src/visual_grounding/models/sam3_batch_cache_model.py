@@ -1,4 +1,5 @@
 import os
+
 import time
 import torch
 import logging
@@ -159,7 +160,6 @@ class Sam3_Batch_Segmentation:
             # self._add_text_prompt(datapoint, item["prompt"]) # However, we may have multiple prompts for a single image, so we gotta deal with that 
 
             # Add each prompt and record and return ID
-            # import pdb; pdb.set_trace()
             for prompt_str, entity, count in zip(item["prompt"], item["entities"], item["count"]):
                 prompt_id = self._add_text_prompt(datapoint, prompt_str)
                 prompt_id_map[prompt_id] = {
@@ -180,7 +180,6 @@ class Sam3_Batch_Segmentation:
 
         # Forward 
         with torch.inference_mode():
-            # import pdb; pdb.set_trace()
             outputs = self.model(batch)
 
         # Postprocessor
@@ -213,9 +212,7 @@ class Sam3_Batch_Segmentation:
 if __name__ == "__main__":
 
     # Log
-    logging.basicConfig(filename="logs/sam3_batch.log",
-                        filemode="a",
-                        level=logging.INFO,
+    logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s [%(levelname)s] %(name)s — %(message)s")
     
     log = logging.getLogger(__name__)

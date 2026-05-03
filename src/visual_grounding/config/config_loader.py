@@ -27,10 +27,10 @@ class ConfigLoader:
         return self.config["paths"]["processed_file"]
 
     def get_cuda_devices(self):
-        return self.config.get("CUDA_DEVICES")
+        return self.config["runtime"]["CUDA_DEVICES"]
 
     def get_batch_size(self):
-        return self.config.get("batch_size")
+        return self.config["runtime"]["batch_size"]
 
     def get_output_folder(self):
         return self.config["paths"]["output_folder"]
